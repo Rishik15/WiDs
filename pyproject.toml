@@ -1,0 +1,11 @@
+[project]
+name = "wids"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "kaggle>=2.0.0",
+    "matplotlib>=3.10.8",
+    "pandas>=3.0.1",
+]
