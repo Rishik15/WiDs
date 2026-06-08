@@ -1,10 +1,16 @@
 # Python-generated files
 __pycache__/
-*.py[oc]
+*.py[cod]
+*$py.class
 build/
 dist/
 wheels/
-*.egg-info
+*.egg-info/
 
 # Virtual environments
-.venv
+.venv/
+.venv-pip/
+
+# CatBoost training logs
+catboost_info/
+.catboost_info/
