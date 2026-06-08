@@ -41,7 +41,7 @@ The final model combines:
 
 The final Python script retrains the model components, loads the saved blending settings, generates predictions, and writes the final submission file.
 
-In our tested environment, the full submission script completed in approximately **114.29 seconds**, or about **1 minute 54 seconds**.
+In our tested environment, the full submission script completed in approximately **99.40 seconds**, or about **1 minute 39 seconds**.
 
 ## Repository Structure
 
@@ -190,8 +190,8 @@ Expected output includes the shape of the training and test feature matrices, mo
 Example runtime from our tested environment:
 
 ```text
-Total script runtime: 114.29 seconds
-Total script runtime: 1 min 54.29 sec
+Total script runtime: 99.40 seconds
+Total script runtime: 1 min 39.40 sec
 ```
 
 ### 3. Run the reproducibility check
