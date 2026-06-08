@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import argparse
+import json
 from pathlib import Path
 from time import perf_counter
-
 import joblib
 import numpy as np
 import pandas as pd
@@ -19,9 +20,41 @@ pd.set_option("display.max_columns", 100)
 HORIZONS = [12, 24, 48, 72]
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT_DIR / "data"
-MODEL_DIR = ROOT_DIR / "src" / "models"
-SUBMISSION_DIR = ROOT_DIR / "src" / "Submission"
+DEFAULT_SETTINGS_PATH = ROOT_DIR / "SETTINGS.json"
+
+
+def load_settings(settings_path: str | Path | None = None) -> dict:
+    """
+    Load SETTINGS.json from the project root or from a user-provided path.
+    """
+    if settings_path is None:
+        settings_path = DEFAULT_SETTINGS_PATH
+
+    settings_path = Path(settings_path)
+
+    if not settings_path.is_absolute():
+        settings_path = ROOT_DIR / settings_path
+
+    if not settings_path.exists():
+        raise FileNotFoundError(f"Settings file not found: {settings_path}")
+
+    with settings_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def resolve_path(settings: dict, key: str) -> Path:
+    """
+    Resolve a path from SETTINGS.json relative to the project root.
+    """
+    if key not in settings:
+        raise KeyError(f"Missing required settings key: {key}")
+
+    path = Path(settings[key])
+
+    if path.is_absolute():
+        return path
+
+    return ROOT_DIR / path
 
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -578,17 +611,22 @@ def sharpen_p12(P, best_p):
     return enforce_monotone(P)
 
 
-def generate_submission(output_path: Path | None = None) -> pd.DataFrame:
+def generate_submission(
+    settings_path: str | Path | None = None,
+    output_path: Path | None = None,
+) -> pd.DataFrame:
+    settings = load_settings(settings_path)
+
     if output_path is None:
-        output_path = SUBMISSION_DIR / "submission.csv"
+        output_path = resolve_path(settings, "SUBMISSION_PATH")
 
     print("Loading data...")
-    train = pd.read_csv(DATA_DIR / "train.csv")
-    val = pd.read_csv(DATA_DIR / "val.csv")
-    test = pd.read_csv(DATA_DIR / "test.csv")
+    train = pd.read_csv(resolve_path(settings, "TRAIN_PATH"))
+    val = pd.read_csv(resolve_path(settings, "VALIDATION_PATH"))
+    test = pd.read_csv(resolve_path(settings, "TEST_PATH"))
 
     print("Loading blend settings...")
-    bundle = joblib.load(MODEL_DIR / "stack_bundle.joblib")
+    bundle = joblib.load(resolve_path(settings, "STACK_BUNDLE_PATH"))
     W = bundle["W"]
     w_risk = bundle["w_risk"]
     best_p = bundle["best_p"]
@@ -663,9 +701,19 @@ def generate_submission(output_path: Path | None = None) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Generate the final WiDS submission file."
+    )
+    parser.add_argument(
+        "--settings",
+        default="SETTINGS.json",
+        help="Path to SETTINGS.json. Defaults to SETTINGS.json in the project root.",
+    )
+    args = parser.parse_args()
+
     start_time = perf_counter()
 
-    generate_submission()
+    generate_submission(settings_path=args.settings)
 
     elapsed = perf_counter() - start_time
     minutes = int(elapsed // 60)

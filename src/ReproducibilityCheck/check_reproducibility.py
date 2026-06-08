@@ -1,18 +1,12 @@
 from __future__ import annotations
 
-import sys
+import argparse
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-SUBMISSION_DIR = ROOT_DIR / "src" / "Submission"
-CHECK_DIR = ROOT_DIR / "src" / "ReproducibilityCheck"
-
-sys.path.append(str(SUBMISSION_DIR))
-
-from src.Submission.submit import generate_submission
+from src.Submission.submit import generate_submission, load_settings, resolve_path
 
 
 def compare_submissions(
@@ -68,12 +62,28 @@ def compare_submissions(
 
 
 def main() -> None:
-    generated_path = CHECK_DIR / "generated_submission.csv"
-    kaggle_path = CHECK_DIR / "kaggle_submission.csv"
+    parser = argparse.ArgumentParser(
+        description="Regenerate the final submission and compare it with the Kaggle submission."
+    )
+    parser.add_argument(
+        "--settings",
+        default="SETTINGS.json",
+        help="Path to SETTINGS.json. Defaults to SETTINGS.json in the project root.",
+    )
+    args = parser.parse_args()
+
+    settings = load_settings(args.settings)
+
+    generated_path = resolve_path(settings, "GENERATED_SUBMISSION_PATH")
+    kaggle_path = resolve_path(settings, "KAGGLE_SUBMISSION_PATH")
 
     print("Regenerating submission...")
-    generated_sub = generate_submission(output_path=generated_path)
+    generated_sub = generate_submission(
+        settings_path=args.settings,
+        output_path=generated_path,
+    )
 
+    # Save and reload before comparison to match normal CSV submission behavior.
     generated_sub.to_csv(generated_path, index=False)
 
     print("Comparing regenerated submission with Kaggle submission...")

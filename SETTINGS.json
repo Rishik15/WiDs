@@ -1,0 +1,18 @@
+{
+  "DATA_DIR": "data",
+  "TRAIN_PATH": "data/train.csv",
+  "VALIDATION_PATH": "data/val.csv",
+  "TEST_PATH": "data/test.csv",
+  "SAMPLE_SUBMISSION_PATH": "data/sample_submission.csv",
+  "METADATA_PATH": "data/metaData.csv",
+
+  "MODEL_DIR": "src/models",
+  "STACK_BUNDLE_PATH": "src/models/stack_bundle.joblib",
+
+  "SUBMISSION_DIR": "src/Submission",
+  "SUBMISSION_PATH": "src/Submission/submission.csv",
+
+  "REPRODUCIBILITY_DIR": "src/ReproducibilityCheck",
+  "GENERATED_SUBMISSION_PATH": "src/ReproducibilityCheck/generated_submission.csv",
+  "KAGGLE_SUBMISSION_PATH": "src/ReproducibilityCheck/kaggle_submission.csv"
+}
