@@ -1,0 +1,10 @@
+.
+./data
+./src
+./src/EDA
+./src/utils
+./src/ReproducibilityCheck
+./src/wids.egg-info
+./src/Submission
+./src/models
+./src/Modeling

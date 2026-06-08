@@ -98,6 +98,7 @@ In our tested environment, the full submission script completed in approximately
 ├── uv.lock
 ├── entry_points.md
 ├── SETTINGS.json
+├── directory_structure.txt
 └── .python-version
 ```
 
