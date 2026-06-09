@@ -136,6 +136,14 @@ src/models/stack_bundle.joblib
 
 This file stores saved blending and post-processing settings used by the final submission workflow. It is not a fully trained model bundle. The final script retrains the model components during execution.
 
+### Settings file
+
+```text
+SETTINGS.json
+```
+
+This file stores the paths used by the submission and reproducibility scripts. The scripts read their data, model, and output paths from this file.
+
 ## Data
 
 The expected data files are located in the `data/` folder:
@@ -161,6 +169,35 @@ The repository includes both:
 - `pyproject.toml` and `uv.lock` for `uv`
 - `requirements.txt` for standard `pip` installation
 
+The `requirements.txt` file contains exact package versions for the Python environment. The main packages used include:
+
+- pandas
+- NumPy
+- scikit-learn
+- LightGBM
+- XGBoost
+- CatBoost
+- joblib
+- lifelines
+- scikit-survival
+- matplotlib
+- seaborn
+- Jupyter-related packages for the included notebooks
+
+## Tested Hardware and Platform
+
+The final workflow was tested on the following environment:
+
+- **OS/platform:** Ubuntu/Linux environment through WSL
+- **Python version:** Python 3.11
+- **CPU:** Intel(R) Core(TM) Ultra 7 258V
+- **CPU cores:** 8
+- **Memory:** 15 GiB RAM
+- **GPU:** None used
+- **Number of GPUs:** 0
+
+The solution is CPU-based and does not require a GPU.
+
 ## Running the Project with uv
 
 This is the recommended way to reproduce the solution.
@@ -179,7 +216,13 @@ uv sync
 uv run python -m src.Submission.submit
 ```
 
-This writes the generated submission file to:
+By default, the script automatically uses the top-level `SETTINGS.json` file. To use a different settings file, pass it explicitly:
+
+```bash
+uv run python -m src.Submission.submit --settings SETTINGS.json
+```
+
+This writes the generated submission file to the path specified by `SUBMISSION_PATH` in `SETTINGS.json`:
 
 ```text
 src/Submission/submission.csv
@@ -200,13 +243,19 @@ Total script runtime: 1 min 39.40 sec
 uv run python -m src.ReproducibilityCheck.check_reproducibility
 ```
 
-This regenerates the submission and saves it to:
+By default, the script automatically uses the top-level `SETTINGS.json` file. To use a different settings file, pass it explicitly:
+
+```bash
+uv run python -m src.ReproducibilityCheck.check_reproducibility --settings SETTINGS.json
+```
+
+This regenerates the submission and saves it to the path specified by `GENERATED_SUBMISSION_PATH` in `SETTINGS.json`:
 
 ```text
 src/ReproducibilityCheck/generated_submission.csv
 ```
 
-It then compares the regenerated file against:
+It then compares the regenerated file against the file specified by `KAGGLE_SUBMISSION_PATH` in `SETTINGS.json`:
 
 ```text
 src/ReproducibilityCheck/kaggle_submission.csv
@@ -249,6 +298,12 @@ python -m pip install -r requirements.txt
 python -m src.Submission.submit
 ```
 
+By default, the script automatically uses the top-level `SETTINGS.json` file. To use a different settings file, pass it explicitly:
+
+```bash
+python -m src.Submission.submit --settings SETTINGS.json
+```
+
 This writes the final submission file to:
 
 ```text
@@ -259,6 +314,12 @@ src/Submission/submission.csv
 
 ```bash
 python -m src.ReproducibilityCheck.check_reproducibility
+```
+
+By default, the script automatically uses the top-level `SETTINGS.json` file. To use a different settings file, pass it explicitly:
+
+```bash
+python -m src.ReproducibilityCheck.check_reproducibility --settings SETTINGS.json
 ```
 
 This writes the regenerated submission file to:
@@ -277,6 +338,51 @@ src/ReproducibilityCheck/kaggle_submission.csv
 
 ```bash
 deactivate
+```
+
+## Running on a New Test Set
+
+To generate predictions on a new test set, place the new test CSV in the project folder and update the `TEST_PATH` value in `SETTINGS.json`.
+
+For example:
+
+```json
+"TEST_PATH": "data/test.csv"
+```
+
+The script will read the test file from the path specified in `SETTINGS.json` and write the output submission to the path specified by `SUBMISSION_PATH`:
+
+```text
+src/Submission/submission.csv
+```
+
+To save the output to a different location, update `SUBMISSION_PATH` in `SETTINGS.json`.
+
+## SETTINGS.json
+
+The submitted scripts use `SETTINGS.json` as the central path configuration file.
+
+The expected structure is:
+
+```json
+{
+  "DATA_DIR": "data",
+  "TRAIN_PATH": "data/train.csv",
+  "VALIDATION_PATH": "data/val.csv",
+  "TEST_PATH": "data/test.csv",
+  "SAMPLE_SUBMISSION_PATH": "data/sample_submission.csv",
+  "METADATA_PATH": "data/metaData.csv",
+
+  "MODEL_DIR": "src/models",
+  "STACK_BUNDLE_PATH": "src/models/stack_bundle.joblib",
+
+  "SUBMISSION_DIR": "src/Submission",
+  "SUBMISSION_PATH": "src/Submission/submission.csv",
+
+  "REPRODUCIBILITY_DIR": "src/ReproducibilityCheck",
+  "GENERATED_SUBMISSION_PATH": "src/ReproducibilityCheck/generated_submission.csv",
+  "KAGGLE_SUBMISSION_PATH": "src/ReproducibilityCheck/kaggle_submission.csv"
+}
 ```
 
 ## Expected Output Files
@@ -313,6 +419,32 @@ contains the saved blending and post-processing settings used by the final workf
 
 The reproducibility check follows the same logic as the final submission workflow, saves the regenerated predictions to CSV, reloads them, and compares them against the Kaggle-downloaded submission file. This avoids confusion from tiny in-memory floating-point formatting differences.
 
+## Important Side Effects
+
+Running the final submission script overwrites:
+
+```text
+src/Submission/submission.csv
+```
+
+Running the reproducibility check overwrites:
+
+```text
+src/ReproducibilityCheck/generated_submission.csv
+```
+
+The output folders do not need to be empty before execution. The scripts are designed to overwrite the generated output files.
+
+## Key Assumptions
+
+- Commands should be run from the top-level project directory.
+- The folder names should be preserved exactly.
+- The expected data files should be located at the paths specified in `SETTINGS.json`.
+- The saved blending settings file should be located at `src/models/stack_bundle.joblib`.
+- The Kaggle-downloaded submission used for reproducibility comparison should be located at `src/ReproducibilityCheck/kaggle_submission.csv`.
+- The final model uses only competition-provided data.
+- The generated submission file follows the Kaggle sample submission format.
+
 ## Model Details
 
 The final solution includes:
@@ -327,14 +459,6 @@ The final solution includes:
 
 The feature set includes distance features, distance-trend features, movement features, ETA features, fire size and growth features, directional alignment features, and temporal/observation-quality features.
 
-## Project Notes
-
-- Run scripts from the top-level project directory.
-- Use `python -m ...` instead of running files by path when using the package-style commands.
-- The folder names are case-sensitive on Linux/WSL.
-- The final model uses only competition-provided data.
-- The generated submission file follows the Kaggle sample submission format.
-
 ## References
 
 - Kaggle competition overview: https://www.kaggle.com/competitions/WiDSWorldWide_GlobalDathon26/overview
@@ -345,5 +469,6 @@ The feature set includes distance features, distance-trend features, movement fe
 - scikit-learn documentation: https://scikit-learn.org
 - pandas documentation: https://pandas.pydata.org
 - NumPy documentation: https://numpy.org
+- joblib documentation: https://joblib.readthedocs.io
 - lifelines documentation: https://lifelines.readthedocs.io
 - scikit-survival documentation: https://scikit-survival.readthedocs.io
